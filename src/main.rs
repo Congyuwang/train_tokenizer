@@ -7,10 +7,15 @@ use tokenizers::{AddedToken, TokenizerBuilder};
 
 #[derive(Parser)]
 struct Cli {
+    /// vocabulary size
+    #[clap(short, long)]
+    size: usize,
+
     /// save path
     #[clap(short, long)]
     out: PathBuf,
 
+    /// list of input txt text files
     #[clap(short, long, value_parser, num_args = 1.., value_delimiter = ' ')]
     txt: Vec<String>,
 }
@@ -19,7 +24,7 @@ fn main() {
     let cli = Cli::parse();
 
     let mut trainer = WordPieceTrainer::builder()
-        .vocab_size(50000)
+        .vocab_size(cli.size)
         .show_progress(true)
         .special_tokens(vec![
             AddedToken::from(String::from("[PAD]"), true),
