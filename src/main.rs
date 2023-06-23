@@ -31,11 +31,15 @@ struct ValueIter<'a> {
 }
 
 impl<'a> ValueIter<'a> {
-    fn new(db: &'a DB, key_count_estimate: usize) -> Self {
+    fn new(db: &'a DB) -> Self {
         let mut read_opt = ReadOptions::default();
         read_opt.set_async_io(true);
         let mut inner = db.raw_iterator_opt(read_opt);
         inner.seek_to_first();
+        let key_count_estimate = db
+            .property_int_value("rocksdb.estimate-num-keys")
+            .expect("failed to get estimate key num")
+            .unwrap() as usize;
         Self {
             inner,
             key_count_estimate,
@@ -59,7 +63,7 @@ impl<'a> Iterator for ValueIter<'a> {
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, Some(self.key_count_estimate))
+        (self.key_count_estimate, Some(self.key_count_estimate))
     }
 }
 
@@ -97,11 +101,7 @@ fn main() {
             Options::load_latest(&db, env, true, cache).expect("failed to load cache");
         let db =
             DB::open_cf_descriptors_read_only(&opts, db, cfs, false).expect("Failed to open db");
-        let estimate_key = db
-            .property_int_value("rocksdb.estimate-num-keys")
-            .expect("failed to get estimate key num")
-            .unwrap() as usize;
-        let value_iter = ValueIter::new(&db, estimate_key);
+        let value_iter = ValueIter::new(&db);
         tokenizer
             .train(&mut trainer, value_iter)
             .expect("Failed to train")
