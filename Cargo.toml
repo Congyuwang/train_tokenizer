@@ -7,4 +7,5 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.3.5", features = ["derive"] }
+rocksdb = "0.21.0"
 tokenizers = "0.13.3"
