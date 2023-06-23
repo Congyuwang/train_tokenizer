@@ -24,13 +24,13 @@ struct Cli {
     txt: Vec<String>,
 }
 
-struct KeyIter<'a> {
+struct ValueIter<'a> {
     inner: DBRawIteratorWithThreadMode<'a, DB>,
     key_count_estimate: usize,
     first: bool,
 }
 
-impl<'a> KeyIter<'a> {
+impl<'a> ValueIter<'a> {
     fn new(db: &'a DB, key_count_estimate: usize) -> Self {
         let mut read_opt = ReadOptions::default();
         read_opt.set_async_io(true);
@@ -44,7 +44,7 @@ impl<'a> KeyIter<'a> {
     }
 }
 
-impl<'a> Iterator for KeyIter<'a> {
+impl<'a> Iterator for ValueIter<'a> {
     type Item = String;
 
     fn next(&mut self) -> Option<String> {
@@ -54,7 +54,7 @@ impl<'a> Iterator for KeyIter<'a> {
             self.first = false;
         }
         self.inner
-            .key()
+            .value()
             .map(|b| String::from_utf8_lossy(b).to_string())
     }
 
@@ -101,9 +101,9 @@ fn main() {
             .property_int_value("rocksdb.estimate-num-keys")
             .expect("failed to get estimate key num")
             .unwrap() as usize;
-        let key_iter = KeyIter::new(&db, estimate_key);
+        let value_iter = ValueIter::new(&db, estimate_key);
         tokenizer
-            .train(&mut trainer, key_iter)
+            .train(&mut trainer, value_iter)
             .expect("Failed to train")
             .save(cli.out, false)
             .expect("Failed to save");
